@@ -12,9 +12,11 @@ export interface QRHanokVillageProps {
   dancheong?: boolean;
   width?: number | string;
   height?: number | string;
+  /** QR → village day/night/day cycle → QR. Default: true. */
   autoPlay?: boolean;
   /** All durations are milliseconds. */
   qrDuration?: number;
+  /** @deprecated Village autoplay follows dayNightDuration; this value is ignored. */
   villageDuration?: number;
   /** Total duration of the tile + camera sequence, in milliseconds. */
   transitionDuration?: number;
