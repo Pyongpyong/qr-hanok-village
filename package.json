@@ -1,6 +1,6 @@
 {
   "name": "qr-hanok-village",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A scannable QR code that unfolds into a miniature Korean hanok village.",
   "type": "module",
   "license": "MIT",
