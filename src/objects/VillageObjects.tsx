@@ -9,7 +9,10 @@ import {
   type InstancedMesh,
   type MeshStandardMaterial,
 } from "three";
+import { useCapture } from "../scene/CaptureContext";
 import { useFrame } from "@react-three/fiber";
+import type { QRHanokVillageArchitecture } from "../types";
+import { architectureStyle } from "../utils/architecture";
 import type { Lot } from "../utils/villageGenerator";
 import { createHouseLight, houseBrightness } from "../utils/houseLight";
 import { housePlots, roofProfile } from "../utils/housePlots";
@@ -33,6 +36,7 @@ function Batch({
   night?: RefObject<number>;
   seed?: string;
 }) {
+  const capture = useCapture();
   const ref = useRef<InstancedMesh>(null);
   const material = useRef<MeshStandardMaterial>(null);
   const time = useRef(0);
@@ -83,7 +87,8 @@ function Batch({
   );
   useFrame((_, delta) => {
     if (!night || !lights || !material.current) return;
-    if (night.current > 0.001) time.current += delta;
+    if (capture) time.current = capture.frame.time;
+    else if (night.current > 0.001) time.current += delta;
     material.current.emissiveIntensity = night.current * 1.6;
     lights.profiles.forEach((profile, i) => {
       lights.levels[i] = houseBrightness(profile, time.current);
@@ -135,10 +140,14 @@ export function VillageObjects({
   lots,
   night,
   seed,
+  architecture = "hanok",
+  dancheong = false,
 }: {
   lots: Lot[];
   night?: RefObject<number>;
   seed: string;
+  architecture?: QRHanokVillageArchitecture;
+  dancheong?: boolean;
 }) {
   const geometries = useMemo(
     () => ({
@@ -153,6 +162,7 @@ export function VillageObjects({
     () => () => Object.values(geometries).forEach((g) => g.dispose()),
     [geometries],
   );
+  const style = architectureStyle(architecture);
   const parts = useMemo(() => {
     const stone: Piece[] = [],
       plaster: Piece[] = [],
@@ -160,10 +170,40 @@ export function VillageObjects({
       paper: Piece[] = [],
       roofs: Piece[] = [],
       ridge: Piece[] = [],
+      rafters: Piece[] = [],
+      green: Piece[] = [],
+      blue: Piece[] = [],
+      gold: Piece[] = [],
       jars: Piece[] = [];
+    function decorate(x: number, z: number, w: number, d: number, y: number) {
+      if (!dancheong) return;
+      // Paint on the exposed outside of the wall, below the overhanging roof.
+      // Previous beams were inside the plaster volume and were occluded.
+      for (const side of [-1, 1]) {
+        for (const axis of [0, 1]) {
+          const along = axis === 0 ? w : d;
+          const across = axis === 0 ? d : w;
+          const piece = (offset: number, height: number, depth: number, length: number): Piece => ({
+            p: axis === 0 ? [x, y + offset, z + side * (across * 0.4 + 0.025)] : [x + side * (across * 0.42 + 0.025), y + offset, z],
+            s: axis === 0 ? [length, height, depth] : [depth, height, length],
+          });
+          green.push(piece(-0.14, 0.16, 0.085, along * 0.91));
+          blue.push(piece(-0.235, 0.035, 0.09, along * 0.91));
+          gold.push(piece(-0.055, 0.025, 0.095, along * 0.91));
+          const count = Math.max(3, Math.round(along * 4));
+          for (let i = 0; i < count; i++) {
+            const offset = along * ((i + 0.5) / count - 0.5) * 0.85;
+            const motif = piece(-0.14, 0.06, 0.025, 0.06);
+            if (axis === 0) { motif.p[0] += offset; motif.p[2] += side * 0.055; motif.r = [0, 0, Math.PI / 4]; }
+            else { motif.p[2] += offset; motif.p[0] += side * 0.055; motif.r = [Math.PI / 4, 0, 0]; }
+            gold.push(motif);
+          }
+        }
+      }
+    }
     for (const plot of housePlots(lots)) {
       const { x, z, w, d, lot } = plot;
-      const roof = roofProfile(plot);
+      const roof = roofProfile(plot, architecture);
       const wallOnly = roof.wallOnly;
       if (wallOnly) {
         stone.push({ p: [x, 0.13, z], s: [w, 0.26, 0.3] });
@@ -174,12 +214,12 @@ export function VillageObjects({
         });
         continue;
       }
-      const h = 0.61 + lot.height * 0.16,
-        floor = 0.14,
+      const h = roof.wallHeight,
+        floor = roof.floorY,
         bodyW = w * 0.8,
         bodyD = d * 0.76;
       const pavilion = lot.kind === "pavilion" && w > 1;
-      stone.push({ p: [x, 0.065, z], s: [w * 0.94, 0.13, d * 0.94] });
+      stone.push({ p: [x, floor / 2, z], s: [w * 0.94, floor, d * 0.94] });
       // Continuous cream plaster walls make homes read as enclosed buildings, rather than red posts.
       if (!pavilion)
         plaster.push({ p: [x, floor + h / 2, z], s: [bodyW, h, bodyD] });
@@ -222,66 +262,119 @@ export function VillageObjects({
                 s: [pw, 0.012, 0.014],
               });
           }
-        wood.push({
-          p: [x + (side * bodyW) / 2, floor + h / 2, z],
-          s: [0.045, h, bodyD],
-        });
-        if (!pavilion)
-          paper.push({
-            house: `${x},${z}`,
-            p: [x + side * (bodyW / 2 + 0.026), floor + h * 0.53, z],
-            s: [0.012, h * 0.54, bodyD * 0.57],
-          });
+        // Plastered end wall with exposed timber framing and a latticed window.
+        for (const end of [-1, 1])
+          wood.push({ p: [x + side * (bodyW / 2 + 0.01), floor + h / 2, z + end * bodyD / 2], s: [0.05, h, 0.045] });
+        for (const level of [0.06, 0.95])
+          wood.push({ p: [x + side * (bodyW / 2 + 0.012), floor + h * level, z], s: [0.045, 0.045, bodyD] });
+        if (!pavilion) {
+          const sx = x + side * (bodyW / 2 + 0.03);
+          paper.push({ house: `${x},${z}`, p: [sx, floor + h * 0.53, z], s: [0.016, h * 0.54, bodyD * 0.57] });
+          for (const line of [-0.24, 0, 0.24]) {
+            wood.push({ p: [sx + side * 0.014, floor + h * 0.53, z + line * bodyD * 0.57], s: [0.014, h * 0.54, 0.012] });
+            wood.push({ p: [sx + side * 0.015, floor + h * (0.53 + line * 0.54), z], s: [0.014, 0.012, bodyD * 0.57] });
+          }
+        }
+        // Repeated exposed rafter ends give the deep eave a readable timber underside.
+        const count = Math.max(4, Math.round(w * 7));
+        for (let i = 0; i < count; i++)
+          rafters.push({ p: [x + (i / (count - 1) - 0.5) * w * 0.94, roof.baseY - 0.005, z + side * d * 0.44], s: [0.024, 0.035, d * 0.12] });
       }
       // Wide overhang, concave slopes, tiled surface and raised ridge are the hanok silhouette.
       roofs.push({
         p: [x, roof.baseY, z],
         s: [roof.width, roof.heightScale, roof.depth],
       });
+      decorate(x, z, w, d, roof.baseY);
+      const crown = roof.upper ?? roof;
+      if (roof.upper) {
+        const upper = roof.upper;
+        roofs.push({
+          p: [x, upper.baseY, z],
+          s: [upper.width, upper.heightScale, upper.depth],
+        });
+        plaster.push({
+          p: [x, roof.baseY + 0.17, z],
+          s: [upper.width * 0.84, 0.3, upper.depth * 0.84],
+        });
+        for (const sx of [-1, 1])
+          for (const sz of [-1, 1])
+            wood.push({
+              p: [
+                x + sx * upper.width * 0.39,
+                roof.baseY + 0.17,
+                z + sz * upper.depth * 0.39,
+              ],
+              s: [0.05, 0.34, 0.05],
+            });
+        decorate(x, z, upper.width, upper.depth, upper.baseY);
+      }
       ridge.push({
-        p: [x, floor + h + 0.385, z],
-        s: [0.038, w * 0.6, 0.038],
+        p: [x, crown.baseY + 0.365 * crown.heightScale, z],
+        s: [
+          0.038 * crown.heightScale,
+          crown.width * 0.78,
+          0.038 * crown.heightScale,
+        ],
         r: [0, 0, Math.PI / 2],
       });
-      for (const side of [-1, 1])
-        ridge.push({
-          p: [x + side * w * 0.3, floor + h + 0.405, z],
-          s: [0.05, 0.13, 0.05],
-          r: [0, 0, -side * 0.65],
-        });
       // Front stone step and a narrow wooden toenmaru veranda.
       stone.push({
         p: [x, 0.045, z + bodyD / 2 + 0.08],
         s: [bodyW * 0.48, 0.09, 0.16],
       });
       wood.push({
-        p: [x, 0.15, z + bodyD / 2 + 0.045],
+        p: [x, floor + 0.01, z + bodyD / 2 + 0.045],
         s: [bodyW, 0.045, 0.13],
       });
       if (lot.kind === "jars")
         for (const dx of [-0.12, 0.12])
           jars.push({ p: [x + dx, 0.25, z - d * 0.43], s: [0.09, 0.24, 0.1] });
     }
-    return { stone, plaster, wood, paper, roofs, ridge, jars };
-  }, [lots]);
+    return {
+      stone,
+      plaster,
+      wood,
+      paper,
+      roofs,
+      ridge,
+      rafters,
+      jars,
+      green,
+      blue,
+      gold,
+    };
+  }, [lots, architecture, dancheong]);
   return (
     <group>
-      <Batch pieces={parts.stone} color="#b4afa1" geometry={geometries.box} />
+      <Batch
+        pieces={parts.stone}
+        color={style.stone}
+        geometry={geometries.box}
+      />
       <Batch pieces={parts.plaster} color="#f3ecdb" geometry={geometries.box} />
-      <Batch pieces={parts.wood} color="#645642" geometry={geometries.box} />
+      <Batch
+        pieces={parts.wood}
+        color={dancheong ? "#863b32" : style.wood}
+        geometry={geometries.box}
+      />
       <Batch
         pieces={parts.paper}
-        color="#e6d4a6"
+        color="#efe5cc"
         geometry={geometries.paperBox}
         night={night}
         seed={seed}
       />
-      <Batch pieces={parts.roofs} color="#414a50" geometry={geometries.roof} />
+      <Batch pieces={parts.rafters} color="#b69a74" geometry={geometries.box} />
+      <Batch pieces={parts.roofs} color="#393d3b" geometry={geometries.roof} />
       <Batch
         pieces={parts.ridge}
         color="#596167"
         geometry={geometries.cylinder}
       />
+      <Batch pieces={parts.green} color="#168967" geometry={geometries.box} />
+      <Batch pieces={parts.blue} color="#277fb1" geometry={geometries.box} />
+      <Batch pieces={parts.gold} color="#f2ce65" geometry={geometries.box} />
       <Batch
         pieces={parts.jars}
         color="#64503e"

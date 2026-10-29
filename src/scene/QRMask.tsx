@@ -8,6 +8,7 @@ import {
   type InstancedMesh,
   type ShaderMaterial,
 } from "three";
+import type { QRHanokVillageArchitecture } from "../types";
 import type { Village } from "../utils/villageGenerator";
 import { housePlots, roofProfile } from "../utils/housePlots";
 import { tileOrder } from "../utils/transition";
@@ -16,29 +17,34 @@ const vertexShader = `
 attribute float aOrder;
 attribute vec4 aRoof;
 attribute vec2 aRoofBase;
+attribute vec4 aUpperRoof;
 
-// Same hipped-roof profile used by the hanok geometry: the QR lies on the tiles.
-float roofHeight(vec2 point) {
-  if (aRoof.z <= 0.0) return 0.005;
-  vec2 q = (point - aRoof.xy) / aRoof.zw;
-  // Clamp tiny floating-point errors at the exact QR-module roof boundary.
+float surfaceHeight(vec2 point, vec4 roof, vec2 base, bool extend) {
+  if (roof.z <= 0.0) return 0.005;
+  vec2 q = (point - roof.xy) / roof.zw;
+  if (!extend && (abs(q.x) > .5 || abs(q.y) > .5)) return 0.005;
   q = clamp(q, vec2(-0.5), vec2(0.5));
   float t = 2.0 * abs(q.y);
   float u;
-  if (abs(q.x) <= 0.28 + 0.22 * t) {
-    u = 0.5 + q.x / (0.56 + 0.44 * t);
+  if (abs(q.x) <= 0.38 + 0.12 * t) {
+    u = 0.5 + q.x / (0.76 + 0.24 * t);
   } else {
-    t = clamp((abs(q.x) - 0.28) / 0.22, 0.0, 1.0);
+    t = clamp((abs(q.x) - 0.38) / 0.12, 0.0, 1.0);
     u = 0.5 + q.y / max(t, 0.0001);
   }
-  float height = 0.36 * pow(1.0-t, 1.5) + 0.075 * pow(t, 8.0)
-    + 0.012 * cos(u * 125.663706) + 0.003 * cos(t * 56.548668);
-  // Follow the raised cylindrical ridge as well as the roof slopes.
-  vec2 local = point - aRoof.xy;
-  if (aRoofBase.y > 0.9 && abs(local.x) < aRoof.z * 0.30 && abs(local.y) < 0.038) {
-    height = max(height, 0.385 + sqrt(max(0.0, 0.038*0.038-local.y*local.y)));
+  float height = 0.34 * pow(1.0-t, 1.3) + 0.025 * pow(t, 8.0)
+    + 0.01 * cos(u * 75.398224) + 0.003 * cos(t * 56.548668);
+  vec2 local = point - roof.xy;
+  if (base.y > 0.5 && abs(local.x) < roof.z * 0.39 && abs(local.y) < 0.038 * base.y) {
+    float ridgeZ = local.y / base.y;
+    height = max(height, 0.365 + sqrt(max(0.0, 0.038*0.038-ridgeZ*ridgeZ)));
   }
-  return aRoofBase.x + height * aRoofBase.y + 0.008;
+  return base.x + height * base.y + 0.008;
+}
+float roofHeight(vec2 point) {
+  float height = surfaceHeight(point, aRoof, aRoofBase, true);
+  if (aUpperRoof.x > 0.0) height = max(height, surfaceHeight(point, vec4(aRoof.xy,aUpperRoof.xy),aUpperRoof.zw,false));
+  return height;
 }
 varying float vOrder;
 varying vec3 vTileColor;
@@ -70,8 +76,10 @@ export function QRMask({
   village,
   seed,
   reveal,
+  architecture = "hanok",
 }: {
   village: Village;
+  architecture?: QRHanokVillageArchitecture;
   seed: string;
   reveal: RefObject<number>;
 }) {
@@ -100,7 +108,8 @@ export function QRMask({
         }
     }
     const roofData = new Float32Array(count * 4),
-      roofBase = new Float32Array(count * 2);
+      roofBase = new Float32Array(count * 2),
+      upperRoof = new Float32Array(count * 4);
     const occupied = new Set(village.lots.map((l) => `${l.x},${l.z}`));
     for (let row = 0; row < side; row++)
       for (let col = 0; col < side; col++) {
@@ -110,9 +119,19 @@ export function QRMask({
         object.position.set(x, 0, z);
         const plot = roofByCell.get(`${x},${z}`);
         if (plot) {
-          const roof = roofProfile(plot);
+          const roof = roofProfile(plot, architecture);
           roofData.set([plot.x, plot.z, roof.width, roof.depth], index * 4);
           roofBase.set([roof.baseY, roof.heightScale], index * 2);
+          if (roof.upper)
+            upperRoof.set(
+              [
+                roof.upper.width,
+                roof.upper.depth,
+                roof.upper.baseY,
+                roof.upper.heightScale,
+              ],
+              index * 4,
+            );
         }
         object.rotation.set(-Math.PI / 2, 0, 0);
         object.updateMatrix();
@@ -124,21 +143,24 @@ export function QRMask({
       }
     mesh.current!.instanceMatrix.needsUpdate = true;
     mesh.current!.instanceColor!.needsUpdate = true;
-    mesh.current!.geometry.setAttribute(
-      "aOrder",
-      new InstancedBufferAttribute(order, 1),
-    );
-    mesh.current!.geometry.setAttribute(
-      "aRoof",
-      new InstancedBufferAttribute(roofData, 4),
-    );
-    mesh.current!.geometry.setAttribute(
-      "aRoofBase",
-      new InstancedBufferAttribute(roofBase, 2),
-    );
+    function attribute(name: string, array: Float32Array, size: number) {
+      const current = mesh.current!.geometry.getAttribute(name);
+      if (current && current.array.length === array.length) {
+        current.array.set(array);
+        current.needsUpdate = true;
+      } else
+        mesh.current!.geometry.setAttribute(
+          name,
+          new InstancedBufferAttribute(array, size),
+        );
+    }
+    attribute("aOrder", order, 1);
+    attribute("aRoof", roofData, 4);
+    attribute("aRoofBase", roofBase, 2);
+    attribute("aUpperRoof", upperRoof, 4);
     // Vertex displacement follows roofs above the CPU-side plane bounds.
     mesh.current!.frustumCulled = false;
-  }, [village, side, order]);
+  }, [village, side, order, architecture]);
   useFrame(() => {
     material.current!.uniforms.uReveal.value = reveal.current;
     mesh.current!.visible = reveal.current < 1;

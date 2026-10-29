@@ -1,3 +1,5 @@
+import type { QRHanokVillageArchitecture } from "../types";
+import { architectureStyle } from "./architecture";
 import type { Lot } from "./villageGenerator";
 
 export interface HousePlot {
@@ -53,13 +55,30 @@ export function housePlots(lots: Lot[]) {
 }
 
 /** Shared by the visible roofs and their conforming QR tiles. */
-export function roofProfile(plot: HousePlot) {
+export function roofProfile(
+  plot: HousePlot,
+  architecture: QRHanokVillageArchitecture = "hanok",
+) {
+  const style = architectureStyle(architecture);
   const wallOnly = plot.lot.kind === "wall" && plot.w === 1 && plot.d === 1;
+  const wallHeight = style.wall + plot.lot.height * style.variation,
+    baseY = wallOnly ? 0.53 : style.floor + wallHeight;
+  const tiered = !wallOnly && architecture === "palace" && plot.w >= 2;
   return {
     width: plot.w,
     depth: plot.d,
-    baseY: wallOnly ? 0.53 : 0.14 + 0.61 + plot.lot.height * 0.16,
-    heightScale: wallOnly ? 0.4 : 1,
+    baseY,
+    heightScale: wallOnly ? 0.4 : style.roofScale,
     wallOnly,
+    floorY: style.floor,
+    wallHeight,
+    upper: tiered
+      ? {
+          width: plot.w * style.upperRatio,
+          depth: plot.d * style.upperRatio,
+          baseY: baseY + style.upperLift,
+          heightScale: style.roofScale * 0.8,
+        }
+      : undefined,
   };
 }
