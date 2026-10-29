@@ -41,3 +41,7 @@ Node.js 24를 사용합니다(`.nvmrc`). CI와 배포는 `package-lock.json`을 
 5. GitHub Actions → Release → Run workflow로 초기 태그/Release를 생성합니다. 이후 main의 변경은 위 커밋 규칙으로 자동 배포됩니다.
 
 npm Trusted Publishing은 GitHub OIDC를 사용하므로 `NPM_TOKEN` secret을 등록하지 않습니다. 새 Trusted Publisher는 등록 후 2일 내 성공적인 배포로 검증해야 합니다. 자세한 요구사항은 [npm 공식 문서](https://docs.npmjs.com/trusted-publishers/)를 확인하세요.
+
+## 기존 npm 게시 이후 첫 자동 릴리스
+
+현재 package.json 버전이 npm에 이미 존재하면 해당 패키지 메타데이터의 `gitHead`부터 HEAD까지 Conventional Commits를 분석합니다. Git 태그가 없거나 과거의 생략된 게시 작업이 새 코드에 같은 버전 태그를 찍었더라도 실제 게시 이후의 변경이 누락되지 않습니다. 현재 버전이 아직 미게시(404)라면 기존 태그 기준 로직을 사용하므로 실패한 게시를 같은 버전으로 재시도할 수 있습니다. 메타데이터 조회 실패 또는 게시 기준 커밋 누락은 오류로 중단합니다.

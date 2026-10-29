@@ -13,8 +13,17 @@ export async function shouldPublish(name, version, fetcher = fetch) {
     `npm registry check failed (${response.status}); refusing to treat it as an unpublished version.`,
   );
 }
+export async function releasePlanBump(name, version, { cwd = process.cwd(), fetcher = fetch } = {}) {
+  const response = await fetcher(`https://registry.npmjs.org/${encodeURIComponent(name)}/${version}`);
+  if (response.status === 404) return releaseBump(cwd);
+  if (!response.ok) throw new Error(`npm registry metadata check failed (${response.status})`);
+  const published = await response.json();
+  if (!published.gitHead) throw new Error("Published version has no gitHead; cannot safely determine the release baseline.");
+  return releaseBump(cwd, published.gitHead);
+}
 async function main() {
-  const bump = releaseBump();
+  const current = JSON.parse(readFileSync("package.json", "utf8"));
+  const bump = await releasePlanBump(current.name, current.version);
   if (bump !== "none")
     execFileSync(
       "npm",

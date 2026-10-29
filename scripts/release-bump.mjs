@@ -17,7 +17,7 @@ export function bumpFor(commits) {
     return RANK[bump] > RANK[best] ? bump : best;
   }, "none");
 }
-export function releaseBump(cwd = process.cwd()) {
+export function releaseBump(cwd = process.cwd(), baseline) {
   const git = (...args) =>
     execFileSync("git", args, {
       cwd,
@@ -40,9 +40,15 @@ export function releaseBump(cwd = process.cwd()) {
   )
     .split("\n")
     .find((t) => /^v\d+\.\d+\.\d+$/.test(t));
-  // Bootstrap with package.json's current version, even in a one-commit repository.
-  if (!tag) return "none";
-  const commits = git("log", "--format=%s%x1f%b%x1e", `${tag}..HEAD`)
+  // npm's published gitHead is authoritative: a tag may have been created
+  // by an earlier run that skipped publication of an already-existing version.
+  const from = baseline ?? tag;
+  if (!from) return "none";
+  if (baseline) {
+    if (!/^[a-f0-9]{40}$/i.test(baseline)) throw new Error("Invalid published gitHead");
+    git("merge-base", "--is-ancestor", baseline, "HEAD");
+  }
+  const commits = git("log", "--format=%s%x1f%b%x1e", `${from}..HEAD`)
     .split("\x1e")
     .map((s) => s.trim())
     .filter(Boolean)
