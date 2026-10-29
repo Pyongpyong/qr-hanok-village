@@ -1,0 +1,85 @@
+{
+  "name": "qr-hanok-village",
+  "version": "0.1.0",
+  "description": "A scannable QR code that unfolds into a miniature Korean hanok village.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build && tsc -p tsconfig.lib.json",
+    "build:demo": "vite build --config vite.demo.config.ts",
+    "test": "node --import tsx --test tests/*.test.ts scripts/*.test.mjs",
+    "prepack": "npm run build",
+    "check": "npm run build && npm test && npm run build:demo",
+    "build:vercel": "npm run check",
+    "release:plan": "node scripts/release-bump.mjs",
+    "prepublishOnly": "npm test"
+  },
+  "peerDependencies": {
+    "@react-three/fiber": "^9.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": ">=0.170.0 <1"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@react-three/fiber": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.180.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.180.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.1.0"
+  },
+  "author": "Pyongpyong",
+  "homepage": "https://github.com/Pyongpyong/qr-hanok-village#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pyongpyong/qr-hanok-village.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Pyongpyong/qr-hanok-village/issues"
+  },
+  "keywords": [
+    "react",
+    "three.js",
+    "react-three-fiber",
+    "qrcode",
+    "qr",
+    "hanok",
+    "korea",
+    "3d",
+    "procedural"
+  ],
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

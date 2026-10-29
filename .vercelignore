@@ -1,0 +1,7 @@
+node_modules
+dist
+demo-dist
+.git
+*.tgz
+.env*
+goal.txt

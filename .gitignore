@@ -1,0 +1,11 @@
+node_modules/
+dist/
+demo-dist/
+*.tgz
+.DS_Store
+goal.txt
+.vercel/
+.env*
+!.env.example
+*.log
+coverage/
