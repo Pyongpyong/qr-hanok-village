@@ -1,5 +1,7 @@
 # qr-hanok-village
 
+[Live demo](https://qr-hanok-village.vercel.app/)
+
 A React component that transforms a scannable QR code into a miniature Korean hanok village. Dark QR modules become tiled roofs, while people, dogs, and cats wander through the alleys. A day/night cycle adds warm, independently changing window lights.
 
 Built with React and Three.js. No external 3D models, stylesheet imports, or scene setup required.
