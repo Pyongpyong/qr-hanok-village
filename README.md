@@ -141,5 +141,3 @@ For manual, instant view changes, use `autoPlay={false}` and `transitionDuration
 ## License
 
 [MIT](https://github.com/Pyongpyong/qr-hanok-village/blob/main/LICENSE).
-
-Repository documentation: [Development and internals](https://github.com/Pyongpyong/qr-hanok-village/blob/main/docs/DEVELOPMENT.md) · [Release automation](https://github.com/Pyongpyong/qr-hanok-village/blob/main/docs/RELEASING.md) · [Demo deployment](https://github.com/Pyongpyong/qr-hanok-village/blob/main/docs/DEPLOYMENT.md).
