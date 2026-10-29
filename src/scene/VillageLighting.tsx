@@ -1,5 +1,6 @@
 import { useMemo, useRef, type RefObject } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
+import { useCapture } from "./CaptureContext";
 import { Color, type AmbientLight, type DirectionalLight } from "three";
 
 /** Day/night lighting and a matching solid background, without scenery objects. */
@@ -14,6 +15,7 @@ export function VillageLighting({
   night: RefObject<number>;
   cycleDuration: number;
 }) {
+  const capture = useCapture();
   const { gl } = useThree();
   const ambient = useRef<AmbientLight>(null);
   const sunlight = useRef<DirectionalLight>(null);
@@ -36,7 +38,9 @@ export function VillageLighting({
         ? cycleDuration
         : 60000;
     const phase = (elapsed.current / (duration / 1000)) * Math.PI * 2;
-    const daylight = (Math.cos(phase) + 1) / 2;
+    const daylight = capture
+      ? capture.frame.daylight
+      : (Math.cos(phase) + 1) / 2;
     night.current = (1 - daylight) * p;
     gl.setClearColor(
       palette.background.copy(palette.day).lerp(palette.night, night.current),

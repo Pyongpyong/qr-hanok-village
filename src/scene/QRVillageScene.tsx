@@ -2,14 +2,17 @@ import { useLayoutEffect, useRef, type RefObject } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { type MeshBasicMaterial, type OrthographicCamera } from "three";
 import { transitionFrame } from "../utils/transition";
+import { useCapture } from "./CaptureContext";
 import { QRMask } from "./QRMask";
 import { VillageLighting } from "./VillageLighting";
 import { VillageObjects } from "../objects/VillageObjects";
 import { Residents } from "./Residents";
 import { type Village } from "../utils/villageGenerator";
-import type { QRHanokVillageView } from "../types";
+import type { QRHanokVillageView, QRHanokVillageArchitecture } from "../types";
 export function QRVillageScene({
   village,
+  architecture,
+  dancheong,
   orbit,
   target,
   duration,
@@ -21,6 +24,8 @@ export function QRVillageScene({
   tileSeed,
 }: {
   village: Village;
+  architecture: QRHanokVillageArchitecture;
+  dancheong: boolean;
   orbit: RefObject<{ yaw: number; pitch: number }>;
   target: QRHanokVillageView;
   duration: number;
@@ -31,6 +36,7 @@ export function QRVillageScene({
   zoom: number;
   tileSeed: string;
 }) {
+  const capture = useCapture();
   const { camera, size, gl } = useThree();
   const night = useRef(0);
   const ground = useRef<MeshBasicMaterial>(null),
@@ -47,7 +53,12 @@ export function QRVillageScene({
   }, [target]);
   useFrame((_, delta) => {
     const m = motion.current;
-    if (!m.done) {
+    if (capture) {
+      progress.current = capture.frame.camera;
+      reveal.current = capture.frame.reveal;
+      orbit.current.yaw = capture.frame.yaw;
+      orbit.current.pitch = 0;
+    } else if (!m.done) {
       m.elapsed += delta * 1000;
       const frame = transitionFrame(target, m.elapsed, duration);
       progress.current = frame.camera;
@@ -83,9 +94,10 @@ export function QRVillageScene({
     );
     cam.far = r + village.size * 8;
     const magnification = Number.isFinite(zoom) && zoom > 0 ? zoom : 1.3;
+    const zoomScale = capture ? capture.frame.zoom : 1;
     cam.zoom =
       (Math.min(size.width, size.height) / span) *
-      (1 + (magnification - 1) * p);
+      (1 + (magnification * zoomScale - 1) * p);
     cam.updateProjectionMatrix();
   }, -2);
   useFrame(() => {
@@ -114,14 +126,25 @@ export function QRVillageScene({
         <planeGeometry args={[village.size + 8, village.size + 8]} />
         <meshBasicMaterial ref={ground} color="#ffffff" toneMapped={false} />
       </mesh>
-      <VillageObjects lots={village.lots} night={night} seed={tileSeed} />
+      <VillageObjects
+        lots={village.lots}
+        night={night}
+        seed={tileSeed}
+        architecture={architecture}
+        dancheong={dancheong}
+      />
       <Residents
         village={village}
         count={residentCount}
         seed={tileSeed}
         active={characters && target === "village" && motion.current.done}
       />
-      <QRMask village={village} seed={tileSeed} reveal={reveal} />
+      <QRMask
+        village={village}
+        seed={tileSeed}
+        reveal={reveal}
+        architecture={architecture}
+      />
     </>
   );
 }

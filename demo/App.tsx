@@ -1,13 +1,18 @@
+import ExportPanel from "./export/ExportPanel";
 import { useRef, useState } from "react";
 import {
   QRHanokVillage,
   type QRHanokVillageRef,
+  type QRHanokVillageArchitecture,
   type QRHanokVillageView,
 } from "../src";
 export default function App() {
   const ref = useRef<QRHanokVillageRef>(null),
     [value, setValue] = useState("https://example.com"),
     [draft, setDraft] = useState(value),
+    [architecture, setArchitecture] =
+      useState<QRHanokVillageArchitecture>("hanok"),
+    [dancheong, setDancheong] = useState(false),
     [seed, setSeed] = useState("bukchon"),
     [auto, setAuto] = useState(false),
     [transition, setTransition] = useState(1800),
@@ -56,6 +61,8 @@ export default function App() {
           <QRHanokVillage
             ref={ref}
             value={value}
+            architecture={architecture}
+            dancheong={dancheong}
             seed={seed}
             height="100%"
             autoPlay={auto}
@@ -104,6 +111,29 @@ export default function App() {
             </button>
           </form>
           <div className="divider" />
+          <label className="architecture-label">
+            ARCHITECTURE
+            <select
+              aria-label="Architecture style"
+              value={architecture}
+              onChange={(e) => {
+                const style = e.target.value as QRHanokVillageArchitecture;
+                setArchitecture(style);
+                setDancheong(style !== "hanok");
+              }}
+            >
+              <option value="hanok">Hanok village · 한옥</option>
+              <option value="palace">Palace · 궁</option>
+            </select>
+          </label>
+          <label className="architecture-ornament">
+            <input
+              type="checkbox"
+              checked={dancheong}
+              onChange={(e) => setDancheong(e.target.checked)}
+            />
+            Dancheong · 단청 장식
+          </label>
           <label>YOUR PERSPECTIVE</label>
           <div className="segmented">
             <button
@@ -195,6 +225,9 @@ export default function App() {
           <p className="seed-note">Same seed. Same little world. Always.</p>
         </aside>
       </section>
+      <ExportPanel
+        scene={{ value, seed, zoom, residentCount, architecture, dancheong, transitionDuration: transition }}
+      />
       <footer>
         <span>BUILT FROM PATTERNS. MADE FOR CURIOSITY.</span>
         <span>

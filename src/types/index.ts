@@ -1,9 +1,15 @@
 import type { CSSProperties } from "react";
+export type QRHanokVillageArchitecture =
+  "hanok" | "palace";
 export type QRHanokVillageView = "qr" | "village";
 export type Phase =
   "QR_VIEW" | "TRANSITION_TO_VILLAGE" | "VILLAGE_VIEW" | "TRANSITION_TO_QR";
 export interface QRHanokVillageProps {
   value: string;
+  /** Geometry proportions inspired by traditional villages or palace halls. */
+  architecture?: QRHanokVillageArchitecture;
+  /** Painted timber ornament. Defaults to true for palace presets. */
+  dancheong?: boolean;
   width?: number | string;
   height?: number | string;
   autoPlay?: boolean;

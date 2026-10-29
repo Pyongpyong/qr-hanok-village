@@ -9,6 +9,7 @@ import {
   useState,
   type PointerEvent,
 } from "react";
+import { CaptureBridge, useCapture } from "../scene/CaptureContext";
 import { Canvas } from "@react-three/fiber";
 import { QRVillageScene } from "../scene/QRVillageScene";
 import { generateVillage } from "../utils/villageGenerator";
@@ -26,6 +27,8 @@ export const QRHanokVillage = forwardRef<
 >(function QRHanokVillage(
   {
     value,
+    architecture = "hanok",
+    dancheong = architecture !== "hanok",
     width = "100%",
     height = 500,
     autoPlay = false,
@@ -46,6 +49,7 @@ export const QRHanokVillage = forwardRef<
   },
   ref,
 ) {
+  const capture = useCapture();
   const [mounted, setMounted] = useState(false),
     [target, setTarget] = useState(initialView),
     [phase, setPhase] = useState<Phase>(stable(initialView));
@@ -185,13 +189,20 @@ export const QRHanokVillage = forwardRef<
         mounted && (
           <Canvas
             orthographic
+            frameloop={capture ? "never" : "always"}
             camera={{ position: [0, 70, 0], near: 0.1, far: 200, zoom: 10 }}
-            dpr={[1, 2]}
-            gl={{ antialias: true, alpha: false }}
+            dpr={capture ? 1 : [1, 2]}
+            gl={{
+              antialias: true,
+              alpha: false,
+              preserveDrawingBuffer: !!capture,
+            }}
             fallback={<div>WebGL is required to explore this village.</div>}
           >
             <QRVillageScene
               village={generated.village!}
+              architecture={architecture}
+              dancheong={dancheong}
               orbit={orbit}
               dayNightDuration={dayNightDuration}
               target={target}
@@ -206,6 +217,7 @@ export const QRHanokVillage = forwardRef<
               characters={characterAnimation && phase === "VILLAGE_VIEW"}
               residentCount={residentCount}
             />
+            {capture && <CaptureBridge session={capture} />}
           </Canvas>
         )
       )}

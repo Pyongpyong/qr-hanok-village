@@ -34,26 +34,28 @@ The default width is `100%` and the default height is `500px`. Resizing is handl
 
 All durations are in milliseconds.
 
-| Prop                 | Type                                 | Default  | Description                                                                       |
-| -------------------- | ------------------------------------ | -------- | --------------------------------------------------------------------------------- |
-| `value`              | `string`                             | Required | Text or URL encoded in the QR code.                                               |
-| `width`              | `number \| string`                   | `"100%"` | Container width; numbers are pixels.                                              |
-| `height`             | `number \| string`                   | `500`    | Container height; numbers are pixels.                                             |
-| `autoPlay`           | `boolean`                            | `false`  | Automatically alternate between QR and village views.                             |
-| `qrDuration`         | `number`                             | `3000`   | Time spent in QR view when autoplay is enabled.                                   |
-| `villageDuration`    | `number`                             | `9000`   | Time spent in village view when autoplay is enabled.                              |
-| `transitionDuration` | `number`                             | `1400`   | Total duration of a view change. Set to `0` for an instant change.                |
-| `zoom`               | `number`                             | `1.3`    | Positive camera zoom multiplier for village view. QR framing stays fixed.         |
-| `initialView`        | `"qr" \| "village"`                  | `"qr"`   | View used on the initial mount.                                                   |
-| `interactive`        | `boolean`                            | `true`   | Enable click/tap switching and drag rotation.                                     |
-| `showControls`       | `boolean`                            | `false`  | Show basic QR and village buttons.                                                |
-| `characterAnimation` | `boolean`                            | `true`   | Show and animate people, dogs, and cats in village view.                          |
-| `residentCount`      | `number`                             | `24`     | Combined population. Rounded down and limited to `0–96`.                          |
-| `dayNightDuration`   | `number`                             | `60000`  | Duration of a complete day → night → day cycle.                                   |
-| `seed`               | `string \| number`                   | `value`  | Reproduce the village layout and animation patterns without changing the QR data. |
-| `className`          | `string`                             | —        | Class applied to the outer container.                                             |
-| `style`              | `React.CSSProperties`                | —        | Inline styles applied to the outer container.                                     |
-| `onViewChange`       | `(view: QRHanokVillageView) => void` | —        | Called when a transition completes, not on initial mount.                         |
+| Prop                 | Type                                                               | Default                                      | Description                                                                       |
+| -------------------- | ------------------------------------------------------------------ | -------------------------------------------- | --------------------------------------------------------------------------------- |
+| `architecture`       | `"hanok" \| "palace"` | `"hanok"`                                    | Village or palace-inspired geometry preset.                                       |
+| `dancheong`          | `boolean`                                                          | `false` for hanok, `true` for palace presets | Painted green, blue, red, and gold timber ornament.                               |
+| `value`              | `string`                                                           | Required                                     | Text or URL encoded in the QR code.                                               |
+| `width`              | `number \| string`                                                 | `"100%"`                                     | Container width; numbers are pixels.                                              |
+| `height`             | `number \| string`                                                 | `500`                                        | Container height; numbers are pixels.                                             |
+| `autoPlay`           | `boolean`                                                          | `false`                                      | Automatically alternate between QR and village views.                             |
+| `qrDuration`         | `number`                                                           | `3000`                                       | Time spent in QR view when autoplay is enabled.                                   |
+| `villageDuration`    | `number`                                                           | `9000`                                       | Time spent in village view when autoplay is enabled.                              |
+| `transitionDuration` | `number`                                                           | `1400`                                       | Total duration of a view change. Set to `0` for an instant change.                |
+| `zoom`               | `number`                                                           | `1.3`                                        | Positive camera zoom multiplier for village view. QR framing stays fixed.         |
+| `initialView`        | `"qr" \| "village"`                                                | `"qr"`                                       | View used on the initial mount.                                                   |
+| `interactive`        | `boolean`                                                          | `true`                                       | Enable click/tap switching and drag rotation.                                     |
+| `showControls`       | `boolean`                                                          | `false`                                      | Show basic QR and village buttons.                                                |
+| `characterAnimation` | `boolean`                                                          | `true`                                       | Show and animate people, dogs, and cats in village view.                          |
+| `residentCount`      | `number`                                                           | `24`                                         | Combined population. Rounded down and limited to `0–96`.                          |
+| `dayNightDuration`   | `number`                                                           | `60000`                                      | Duration of a complete day → night → day cycle.                                   |
+| `seed`               | `string \| number`                                                 | `value`                                      | Reproduce the village layout and animation patterns without changing the QR data. |
+| `className`          | `string`                                                           | —                                            | Class applied to the outer container.                                             |
+| `style`              | `React.CSSProperties`                                              | —                                            | Inline styles applied to the outer container.                                     |
+| `onViewChange`       | `(view: QRHanokVillageView) => void`                               | —                                            | Called when a transition completes, not on initial mount.                         |
 
 ```tsx
 <QRHanokVillage
@@ -75,6 +77,18 @@ View changes are ignored while a transition is running. Autoplay pauses during d
 The day/night cycle runs independently of autoplay while the village is open. The background and floor darken together at night, and each house's windows brighten and dim at different intervals. The default population is eight people, eight dogs, and eight cats. Set `residentCount={0}` or `characterAnimation={false}` to hide them.
 
 Use finite, nonnegative durations and a finite, positive zoom. Higher zoom values may crop the village edges. An empty or oversized QR value displays an inline error.
+
+## Architecture styles
+
+```tsx
+<QRHanokVillage
+  value="https://example.com"
+  architecture="palace"
+  dancheong
+/>
+```
+
+Choose `hanok` for the original village, or `palace` for palace-inspired roof tiers, columns, and raised stone platforms. These are procedural style presets, not replicas of the real palace layouts. Set `dancheong` independently to add painted eaves and bracket details. QR roof footprints and encoding remain unchanged across styles.
 
 ## Ref API
 
@@ -108,6 +122,7 @@ The package exports `QRHanokVillage` and these TypeScript types:
 
 ```ts
 import type {
+  QRHanokVillageArchitecture,
   QRHanokVillageProps,
   QRHanokVillageRef,
   QRHanokVillageView,

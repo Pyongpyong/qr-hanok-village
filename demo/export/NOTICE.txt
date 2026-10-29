@@ -1,0 +1,14 @@
+The optional browser exporter uses ffmpeg.wasm.
+
+@ffmpeg/ffmpeg 0.12.15 — MIT
+https://github.com/ffmpegwasm/ffmpeg.wasm
+
+@ffmpeg/core 0.12.10 (single-thread WebAssembly build) — GPL-2.0-or-later
+Unmodified upstream binary distributed through npm:
+https://www.npmjs.com/package/@ffmpeg/core/v/0.12.10
+Corresponding source, dependencies and reproducible build instructions:
+https://github.com/ffmpegwasm/ffmpeg.wasm/tree/core_v0.12.10
+https://github.com/ffmpegwasm/ffmpeg.wasm/tree/core_v0.12.10/build
+
+The licenses are provided alongside this notice as GPL-2.0.txt and MIT.ffmpeg.txt.
+The npm qr-hanok-village library does not bundle the optional encoder.

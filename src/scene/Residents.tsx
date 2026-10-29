@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Color, Object3D, type InstancedMesh } from "three";
+import { Color, Object3D, type InstancedMesh, type Group } from "three";
+import { useCapture } from "./CaptureContext";
 import { createResidents } from "../utils/residents";
 import type { Village } from "../utils/villageGenerator";
 const multipliers = [1, 1, 4, 2, 1, 2, 2, 1];
@@ -16,6 +17,8 @@ export function Residents({
   seed: string;
   active: boolean;
 }) {
+  const capture = useCapture();
+  const group = useRef<Group>(null);
   const residents = useMemo(
     () => createResidents(village, count, seed),
     [village, count, seed],
@@ -46,7 +49,10 @@ export function Residents({
   }, [residents]);
   useFrame((_, delta) => {
     if (!active) return;
-    elapsed.current += Math.min(delta, 0.1);
+    if (capture) {
+      group.current!.visible = capture.frame.residents;
+      elapsed.current = capture.frame.time;
+    } else elapsed.current += Math.min(delta, 0.1);
     residents.forEach((r, i) => {
       const time = elapsed.current * r.speed + r.offset,
         index = Math.floor(time) % r.route.length,
@@ -178,7 +184,7 @@ export function Residents({
       if (mesh) mesh.instanceMatrix.needsUpdate = true;
   });
   return (
-    <group name="village-residents" visible={active}>
+    <group ref={group} name="village-residents" visible={active}>
       {multipliers.map((multiple, part) => (
         <instancedMesh
           key={part}

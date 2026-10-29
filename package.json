@@ -41,6 +41,8 @@
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
+    "@ffmpeg/core": "0.12.10",
+    "@ffmpeg/ffmpeg": "0.12.15",
     "@react-three/fiber": "^9.0.0",
     "@types/node": "^22.0.0",
     "@types/qrcode": "^1.5.5",
