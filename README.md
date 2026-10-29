@@ -26,7 +26,7 @@ export default function App() {
 }
 ```
 
-The component starts in QR view with autoplay disabled. Click or tap to reveal the village. In village view, drag to rotate or tilt the camera; click without dragging to return to the QR code. The QR tiles reappear during the final part of the camera's return.
+The component starts in QR view with autoplay enabled. Click or tap to reveal the village. In village view, drag to rotate or tilt the camera, and scroll or pinch to zoom; click without dragging to return to the QR code. The QR tiles reappear during the final part of the camera's return.
 
 The default width is `100%` and the default height is `500px`. Resizing is handled automatically. If you use `height="100%"`, give the parent an explicit height.
 
@@ -41,13 +41,13 @@ All durations are in milliseconds.
 | `value`              | `string`                                                           | Required                                     | Text or URL encoded in the QR code.                                               |
 | `width`              | `number \| string`                                                 | `"100%"`                                     | Container width; numbers are pixels.                                              |
 | `height`             | `number \| string`                                                 | `500`                                        | Container height; numbers are pixels.                                             |
-| `autoPlay`           | `boolean`                                                          | `false`                                      | Automatically alternate between QR and village views.                             |
+| `autoPlay`           | `boolean`                                                          | `true`                                       | QR → village day/night/day cycle → QR.                             |
 | `qrDuration`         | `number`                                                           | `3000`                                       | Time spent in QR view when autoplay is enabled.                                   |
-| `villageDuration`    | `number`                                                           | `9000`                                       | Time spent in village view when autoplay is enabled.                              |
+| `villageDuration`    | `number`                                                           | —                                            | Deprecated; ignored. Autoplay follows `dayNightDuration`.                              |
 | `transitionDuration` | `number`                                                           | `1400`                                       | Total duration of a view change. Set to `0` for an instant change.                |
 | `zoom`               | `number`                                                           | `1.3`                                        | Positive camera zoom multiplier for village view. QR framing stays fixed.         |
 | `initialView`        | `"qr" \| "village"`                                                | `"qr"`                                       | View used on the initial mount.                                                   |
-| `interactive`        | `boolean`                                                          | `true`                                       | Enable click/tap switching and drag rotation.                                     |
+| `interactive`        | `boolean`                                                          | `true`                                       | Enable click/tap switching, drag rotation, and wheel/pinch zoom.                                     |
 | `showControls`       | `boolean`                                                          | `false`                                      | Show basic QR and village buttons.                                                |
 | `characterAnimation` | `boolean`                                                          | `true`                                       | Show and animate people, dogs, and cats in village view.                          |
 | `residentCount`      | `number`                                                           | `24`                                         | Combined population. Rounded down and limited to `0–96`.                          |
@@ -62,7 +62,6 @@ All durations are in milliseconds.
   value="https://example.com"
   autoPlay
   qrDuration={5000}
-  villageDuration={12000}
   transitionDuration={1800}
   zoom={1.3}
   residentCount={36}
@@ -74,7 +73,7 @@ All durations are in milliseconds.
 
 View changes are ignored while a transition is running. Autoplay pauses during dragging and restarts its waiting period when the gesture ends. Changing `value` or `seed` preserves the current view.
 
-The day/night cycle runs independently of autoplay while the village is open. The background and floor darken together at night, and each house's windows brighten and dim at different intervals. The default population is eight people, eight dogs, and eight cats. Set `residentCount={0}` or `characterAnimation={false}` to hide them.
+Each village visit starts in daylight and runs a complete day → night → day cycle (`dayNightDuration`, default 60 seconds). Autoplay then returns to QR view. With autoplay disabled, lighting continues cycling in village view. Holding a drag or pinch defers automatic return until release. Wheel and pinch zoom affect only village view; zoom resets on return to QR or when the `zoom` prop changes. The background and floor darken together at night, and each house's windows brighten and dim at different intervals. The default population is eight people, eight dogs, and eight cats. Set `residentCount={0}` or `characterAnimation={false}` to hide them.
 
 Use finite, nonnegative durations and a finite, positive zoom. Higher zoom values may crop the village edges. An empty or oversized QR value displays an inline error.
 

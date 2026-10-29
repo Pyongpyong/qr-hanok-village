@@ -9,11 +9,15 @@ export function VillageLighting({
   progress,
   night,
   cycleDuration,
+  active,
+  onCycleComplete,
 }: {
   size: number;
   progress: RefObject<number>;
   night: RefObject<number>;
   cycleDuration: number;
+  active: boolean;
+  onCycleComplete: () => void;
 }) {
   const capture = useCapture();
   const { gl } = useThree();
@@ -32,11 +36,16 @@ export function VillageLighting({
   );
   useFrame((_, delta) => {
     const p = progress.current;
-    if (p > 0.99) elapsed.current += delta;
+    if (!active && p < 0.001) elapsed.current = 0;
+    else if (active && !capture) elapsed.current += delta;
     const duration =
       Number.isFinite(cycleDuration) && cycleDuration > 0
         ? cycleDuration
         : 60000;
+    if (!capture && active && elapsed.current >= duration / 1000) {
+      elapsed.current %= duration / 1000;
+      onCycleComplete();
+    }
     const phase = (elapsed.current / (duration / 1000)) * Math.PI * 2;
     const daylight = capture
       ? capture.frame.daylight

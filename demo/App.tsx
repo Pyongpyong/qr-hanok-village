@@ -14,9 +14,8 @@ export default function App() {
       useState<QRHanokVillageArchitecture>("hanok"),
     [dancheong, setDancheong] = useState(false),
     [seed, setSeed] = useState("bukchon"),
-    [auto, setAuto] = useState(false),
+    [auto, setAuto] = useState(true),
     [transition, setTransition] = useState(1800),
-    [duration, setDuration] = useState(9000),
     [cycle, setCycle] = useState(60000),
     [residentCount, setResidentCount] = useState(24),
     [zoom, setZoom] = useState(1.3),
@@ -70,7 +69,6 @@ export default function App() {
             zoom={zoom}
             residentCount={residentCount}
             transitionDuration={transition}
-            villageDuration={duration}
             onViewChange={setView}
             style={{ minHeight: 380 }}
           />
@@ -81,7 +79,7 @@ export default function App() {
             <span>
               {view === "qr"
                 ? "Click the scene to explore ↗"
-                : "Drag to rotate · Click to return ↙"}
+                : "Drag to rotate · Scroll / pinch to zoom"}
             </span>
           </div>
         </div>
@@ -151,7 +149,7 @@ export default function App() {
           </div>
           <div className="autoplay">
             <span>
-              Autoplay <small>Let the scene unfold</small>
+              Autoplay <small>Day → night → day → QR</small>
             </span>
             <button
               className={`switch ${auto ? "on" : ""}`}
@@ -183,17 +181,6 @@ export default function App() {
               step="0.05"
               value={zoom}
               onChange={(e) => setZoom(+e.target.value)}
-            />
-          </label>
-          <label className="range-label">
-            TIME IN THE VILLAGE <b>{duration / 1000} s</b>
-            <input
-              type="range"
-              min="3000"
-              max="20000"
-              step="1000"
-              value={duration}
-              onChange={(e) => setDuration(+e.target.value)}
             />
           </label>
           <label className="range-label">

@@ -20,19 +20,23 @@ export function QRVillageScene({
   characters,
   residentCount,
   dayNightDuration,
+  dayNightActive,
+  onCycleComplete,
   zoom,
   tileSeed,
 }: {
   village: Village;
   architecture: QRHanokVillageArchitecture;
   dancheong: boolean;
-  orbit: RefObject<{ yaw: number; pitch: number }>;
+  orbit: RefObject<{ yaw: number; pitch: number; zoom: number }>;
   target: QRHanokVillageView;
   duration: number;
   onComplete: (v: QRHanokVillageView) => void;
   characters: boolean;
   residentCount: number;
   dayNightDuration: number;
+  dayNightActive: boolean;
+  onCycleComplete: () => void;
   zoom: number;
   tileSeed: string;
 }) {
@@ -50,7 +54,8 @@ export function QRVillageScene({
       elapsed: 0,
       done: progress.current === to && reveal.current === to,
     };
-  }, [target]);
+    if (motion.current.done) onComplete(target);
+  }, [target, onComplete]);
   useFrame((_, delta) => {
     const m = motion.current;
     if (capture) {
@@ -94,7 +99,7 @@ export function QRVillageScene({
     );
     cam.far = r + village.size * 8;
     const magnification = Number.isFinite(zoom) && zoom > 0 ? zoom : 1.3;
-    const zoomScale = capture ? capture.frame.zoom : 1;
+    const zoomScale = capture ? capture.frame.zoom : orbit.current.zoom;
     cam.zoom =
       (Math.min(size.width, size.height) / span) *
       (1 + (magnification * zoomScale - 1) * p);
@@ -113,6 +118,8 @@ export function QRVillageScene({
         progress={progress}
         night={night}
         cycleDuration={dayNightDuration}
+        active={dayNightActive}
+        onCycleComplete={onCycleComplete}
       />
       <mesh name="village-base" position={[0, -0.22, 0]}>
         <boxGeometry args={[village.size + 8, 0.4, village.size + 8]} />
