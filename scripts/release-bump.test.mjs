@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { classify, bumpFor, releaseBump } from "./release-bump.mjs";
-import { shouldPublish } from "./release-plan.mjs";
+import { shouldPublish, releasePlanBump } from "./release-plan.mjs";
 test("Conventional Commits select the largest semantic version bump", () => {
   assert.equal(classify("feat: a"), "minor");
   assert.equal(classify("fix(core): b"), "patch");
@@ -82,4 +82,30 @@ test("release retries skip existing versions and only a real 404 permits publish
     }),
     /offline/,
   );
+});
+
+test("manual npm publication is the baseline even when tags are missing or point at skipped releases", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "hanok-bootstrap-"));
+  const git = (...args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: "pipe" }).trim();
+  try {
+    git("init", "-b", "main");
+    git("config", "user.name", "Release Test");
+    git("config", "user.email", "release@example.com");
+    git("commit", "--allow-empty", "-m", "feat: initial package");
+    const gitHead = git("rev-parse", "HEAD");
+    const fetcher = async () => ({ status: 200, ok: true, json: async () => ({ gitHead }) });
+    assert.equal(await releasePlanBump("example", "0.1.0", { cwd, fetcher }), "none");
+    git("commit", "--allow-empty", "-m", "feat: social exports");
+    assert.equal(releaseBump(cwd), "none");
+    assert.equal(await releasePlanBump("example", "0.1.0", { cwd, fetcher }), "minor");
+    git("tag", "v0.1.0"); // The prior broken run tagged newer code without publishing it.
+    assert.equal(releaseBump(cwd), "none");
+    assert.equal(await releasePlanBump("example", "0.1.0", { cwd, fetcher }), "minor");
+    git("commit", "--allow-empty", "-m", "chore(release): v0.2.0");
+    git("tag", "v0.2.0");
+    assert.equal(await releasePlanBump("example", "0.2.0", { cwd, fetcher: async () => ({ status: 404 }) }), "none");
+    await assert.rejects(releasePlanBump("example", "0.2.0", { cwd, fetcher: async () => ({ status: 503 }) }), /metadata check failed/);
+    await assert.rejects(releasePlanBump("example", "0.1.0", { cwd, fetcher: async () => ({ ok: true, json: async () => ({}) }) }), /no gitHead/);
+    assert.throws(() => releaseBump(cwd, "not-a-sha"), /Invalid published gitHead/);
+  } finally { rmSync(cwd, { recursive: true, force: true }); }
 });
